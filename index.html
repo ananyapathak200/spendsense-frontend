@@ -1,0 +1,251 @@
+<!-- Spendsense with auth · HTML
+Copy -->
+
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SpendSense – Smart Expense Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<link rel="stylesheet " href="style.css">  
+</head>
+<body>
+<div class="bg-blobs">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+<div class="success-toast" id="toast">✓ Done!</div>
+ 
+<!-- ==================== AUTH PAGES ==================== -->
+<!-- LOGIN PAGE -->
+<div id="page-login" class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">💸</div>
+      <div class="auth-logo-text">SpendSense</div>
+    </div>
+    <h1 class="auth-title">Welcome back 👋</h1>
+    <p class="auth-sub">Login to access your expense dashboard</p>
+    <div class="auth-error" id="login-error"></div>
+    <div class="auth-form">
+      <div class="auth-group">
+        <label class="auth-label">Email address</label>
+        <input type="email" id="login-email" class="auth-input" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="auth-group">
+        <label class="auth-label">Password</label>
+        <div class="password-wrap">
+          <input type="password" id="login-password" class="auth-input" placeholder="Enter your password" autocomplete="current-password"/>
+          <button class="password-toggle" onclick="togglePass('login-password',this)" type="button">👁️</button>
+        </div>
+      </div>
+      <button class="auth-btn" id="login-btn" onclick="handleLogin()">Login to SpendSense</button>
+    </div>
+    <div class="auth-switch">Don't have an account? <a onclick="showPage('register')">Create one free</a></div>
+  </div>
+</div>
+ 
+<!-- REGISTER PAGE -->
+<div id="page-register" class="auth-wrapper" style="display:none">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">💸</div>
+      <div class="auth-logo-text">SpendSense</div>
+    </div>
+    <h1 class="auth-title">Create account ✨</h1>
+    <p class="auth-sub">Start tracking your expenses for free</p>
+    <div class="auth-error" id="register-error"></div>
+    <div class="auth-success" id="register-success"></div>
+    <div class="auth-form">
+      <div class="auth-group">
+        <label class="auth-label">Full Name</label>
+        <input type="text" id="reg-name" class="auth-input" placeholder="Rahul Sharma" autocomplete="name"/>
+      </div>
+      <div class="auth-group">
+        <label class="auth-label">Email address</label>
+        <input type="email" id="reg-email" class="auth-input" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="auth-group">
+        <label class="auth-label">Password</label>
+        <div class="password-wrap">
+          <input type="password" id="reg-password" class="auth-input" placeholder="Min 6 characters" oninput="checkStrength(this.value)" autocomplete="new-password"/>
+          <button class="password-toggle" onclick="togglePass('reg-password',this)" type="button">👁️</button>
+        </div>
+        <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+        <div class="strength-text" id="strength-text" style="color:var(--muted)"></div>
+      </div>
+      <button class="auth-btn" id="register-btn" onclick="handleRegister()">Create My Account</button>
+    </div>
+    <div class="auth-switch">Already have an account? <a onclick="showPage('login')">Login here</a></div>
+  </div>
+</div>
+ 
+<!-- ==================== MAIN APP ==================== -->
+<div id="page-app" class="app-wrapper" style="display:none">
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon">💸</div>
+      <div class="logo-text">SpendSense</div>
+    </div>
+    <span class="nav-label">Navigation</span>
+    <button class="nav-item active" onclick="showView('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</button>
+    <button class="nav-item" onclick="showView('add',this)"><span class="nav-icon">➕</span>Add Expense</button>
+    <button class="nav-item" onclick="showView('expenses',this)"><span class="nav-icon">📋</span>All Expenses<span class="nav-count" id="nav-count">0</span></button>
+    <button class="nav-item" onclick="showView('insights',this)"><span class="nav-icon">🧠</span>Smart Insights</button>
+    <button class="nav-item" onclick="showView('reports',this)"><span class="nav-icon">📈</span>Reports</button>
+    <button class="nav-item" onclick="showView('settings',this)"><span class="nav-icon">⚙️</span>Settings</button>
+    <div class="sidebar-bottom">
+      <!-- Logged in user info -->
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name-display">Loading...</div>
+          <div class="user-email" id="user-email-display">...</div>
+        </div>
+      </div>
+      <div class="budget-widget" id="sidebar-budget">
+        <div class="bw-label">⚠ Monthly Budget</div>
+        <div class="bw-amount" id="sb-amount">₹0 / ₹0</div>
+        <div class="budget-progress"><div class="budget-fill" id="sb-fill" style="width:0%"></div></div>
+        <div class="budget-pct" id="sb-pct">0% used</div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()"><span id="theme-icon">☀️</span><span id="theme-label">Light Mode</span></button>
+      <button class="logout-btn" onclick="handleLogout()">🚪 Logout</button>
+    </div>
+  </aside>
+ 
+  <main class="main">
+    <div class="budget-banner" id="budget-banner">⚠️ <strong>Budget Alert!</strong>&nbsp;You have exceeded your monthly budget!</div>
+ 
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Dashboard 📊</h1>
+          <p class="page-sub" id="dashboard-greeting">Your financial overview</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="hamburger" onclick="toggleSidebar()">☰</button>
+          <div class="filter-chip active" onclick="setDateFilter('today',this)">Today</div>
+          <div class="filter-chip" onclick="setDateFilter('week',this)">Week</div>
+          <div class="filter-chip" onclick="setDateFilter('month',this)">Month</div>
+          <div class="filter-chip" onclick="setDateFilter('all',this)">All</div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card green"><div class="stat-icon">💳</div><div class="stat-label">Total Spent</div><div class="stat-value" id="stat-total">₹0</div><div class="stat-change"><span id="stat-total-change">—</span></div></div>
+        <div class="stat-card blue"><div class="stat-icon">📅</div><div class="stat-label">This Month</div><div class="stat-value" id="stat-month">₹0</div><div class="stat-change"><span id="stat-month-change">—</span></div></div>
+        <div class="stat-card yellow"><div class="stat-icon">🗓️</div><div class="stat-label">This Week</div><div class="stat-value" id="stat-week">₹0</div><div class="stat-change"><span id="stat-week-change">—</span></div></div>
+        <div class="stat-card red"><div class="stat-icon">⚡</div><div class="stat-label">Today</div><div class="stat-value" id="stat-today">₹0</div><div class="stat-change"><span id="stat-today-change">— transactions</span></div></div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-card-title">📊 Monthly Spending <span>Last 6 months</span></div><div class="chart-wrap" style="height:240px"><canvas id="barChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-title">🍕 Category Breakdown <span>Current filter</span></div><div class="chart-wrap" style="height:240px"><canvas id="pieChart"></canvas></div></div>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><span class="table-title">🕒 Recent Expenses</span><button class="btn-outline" onclick="showView('expenses',document.querySelectorAll('.nav-item')[2])">View All →</button></div>
+        <table><thead><tr><th>Description</th><th>Category</th><th>Date</th><th>Amount</th></tr></thead><tbody id="recent-tbody"></tbody></table>
+      </div>
+    </div>
+ 
+    <!-- ADD EXPENSE -->
+    <div class="view" id="view-add">
+      <div class="page-header"><div><h1 class="page-title">Add Expense ➕</h1><p class="page-sub">Record a new transaction</p></div></div>
+      <div class="form-card">
+        <div class="form-grid">
+          <div class="form-group full"><label>Amount (₹)</label><div class="currency-input-wrap"><span class="currency-symbol">₹</span><input type="number" id="inp-amount" class="form-input" placeholder="0.00" min="0" step="0.01"/></div></div>
+          <div class="form-group"><label>Date</label><input type="date" id="inp-date" class="form-input"/></div>
+          <div class="form-group"><label>Description</label><input type="text" id="inp-desc" class="form-input" placeholder="Coffee, Uber ride…"/></div>
+          <div class="form-group full"><label>Category</label>
+            <div class="cat-grid" id="cat-grid">
+              <div class="cat-item selected" data-cat="Food" onclick="selectCat(this)"><span class="ci-emoji">🍔</span>Food</div>
+              <div class="cat-item" data-cat="Travel" onclick="selectCat(this)"><span class="ci-emoji">✈️</span>Travel</div>
+              <div class="cat-item" data-cat="Shopping" onclick="selectCat(this)"><span class="ci-emoji">🛍️</span>Shopping</div>
+              <div class="cat-item" data-cat="Health" onclick="selectCat(this)"><span class="ci-emoji">💊</span>Health</div>
+              <div class="cat-item" data-cat="Bills" onclick="selectCat(this)"><span class="ci-emoji">📱</span>Bills</div>
+              <div class="cat-item" data-cat="Entertainment" onclick="selectCat(this)"><span class="ci-emoji">🎬</span>Entertain</div>
+              <div class="cat-item" data-cat="Education" onclick="selectCat(this)"><span class="ci-emoji">📚</span>Education</div>
+              <div class="cat-item" data-cat="Other" onclick="selectCat(this)"><span class="ci-emoji">📦</span>Other</div>
+            </div>
+          </div>
+          <div class="form-group full" style="display:flex;gap:12px;margin-top:8px">
+            <button class="btn-primary" onclick="addExpense()"><span>➕</span>Add Expense</button>
+            <button class="btn-outline" onclick="clearForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- ALL EXPENSES -->
+    <div class="view" id="view-expenses">
+      <div class="page-header"><div><h1 class="page-title">All Expenses 📋</h1><p class="page-sub" id="expenses-count-label">Loading…</p></div></div>
+      <div class="filter-bar">
+        <div class="filter-chip active" onclick="setExpFilter('all',this)">All</div>
+        <div class="filter-chip" onclick="setExpFilter('today',this)">Today</div>
+        <div class="filter-chip" onclick="setExpFilter('week',this)">This Week</div>
+        <div class="filter-chip" onclick="setExpFilter('month',this)">This Month</div>
+        <select class="filter-select" id="cat-filter" onchange="renderExpenses()">
+          <option value="">All Categories</option>
+          <option value="Food">🍔 Food</option><option value="Travel">✈️ Travel</option><option value="Shopping">🛍️ Shopping</option>
+          <option value="Health">💊 Health</option><option value="Bills">📱 Bills</option><option value="Entertainment">🎬 Entertainment</option>
+          <option value="Education">📚 Education</option><option value="Other">📦 Other</option>
+        </select>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><span class="table-title">Transactions</span><div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="search-input" class="search-input" placeholder="Search expenses…" oninput="renderExpenses()"/></div></div>
+        <table><thead><tr><th>#</th><th>Description</th><th>Category</th><th>Date</th><th>Amount</th><th>Action</th></tr></thead><tbody id="all-tbody"></tbody></table>
+      </div>
+    </div>
+ 
+    <!-- INSIGHTS -->
+    <div class="view" id="view-insights">
+      <div class="page-header"><div><h1 class="page-title">Smart Insights 🧠</h1><p class="page-sub">AI-powered spending analysis</p></div><button class="btn-primary" onclick="generateInsights()">🔄 Refresh Insights</button></div>
+      <div class="insights-panel"><div class="insights-title">💡 Spending Insights<span class="insight-badge badge-ai">✨ AI Powered</span></div><div class="insight-cards" id="insight-cards"></div></div>
+      <div class="chart-card" style="margin-bottom:24px"><div class="chart-card-title">📊 Category-wise Weekly vs Monthly</div><div class="chart-wrap" style="height:280px"><canvas id="barCompareChart"></canvas></div></div>
+      <div class="chart-card"><div class="chart-card-title">📅 Daily Spending Trend (Last 14 days)</div><div class="chart-wrap" style="height:220px"><canvas id="lineChart"></canvas></div></div>
+    </div>
+ 
+    <!-- REPORTS -->
+    <div class="view" id="view-reports">
+      <div class="page-header"><div><h1 class="page-title">Reports 📈</h1><p class="page-sub">Monthly spending breakdown</p></div></div>
+      <div class="report-actions"><button class="btn-primary" onclick="exportPDF()">📥 Export PDF</button><button class="btn-outline" onclick="exportCSV()">📊 Export CSV</button></div>
+      <div class="table-card"><div class="table-header"><span class="table-title">Monthly Summary</span></div><table class="monthly-table"><thead><tr><th>Month</th><th>Transactions</th><th>Top Category</th><th>Total Spent</th></tr></thead><tbody id="monthly-tbody"></tbody></table></div>
+    </div>
+ 
+    <!-- SETTINGS -->
+    <div class="view" id="view-settings">
+      <div class="page-header"><div><h1 class="page-title">Settings ⚙️</h1><p class="page-sub">Configure your preferences</p></div></div>
+      <div class="settings-card">
+        <div class="settings-title">💰 Monthly Budget Limit</div>
+        <div class="settings-row">
+          <div class="form-group" style="flex:1"><label>Set Monthly Budget (₹)</label><div class="currency-input-wrap"><span class="currency-symbol">₹</span><input type="number" id="budget-input" class="form-input" placeholder="10000" min="0"/></div></div>
+          <button class="btn-primary" onclick="saveBudget()">Save Budget</button>
+        </div>
+        <p style="color:var(--muted);font-size:13px;margin-top:12px">Current budget: <strong id="current-budget-display" style="color:var(--accent)">Not set</strong></p>
+      </div>
+      <!-- <div class="settings-card">
+        <div class="settings-title">🔗 API Configuration</div>
+        <div class="form-group" style="margin-bottom:16px"><label>Spring Boot API Base URL</label><input type="text" id="api-url" class="form-input" placeholder="http://localhost:8080" value="http://localhost:8080"/></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn-primary" onclick="saveApiConfig()">💾 Save Config</button>
+          <button class="btn-outline" onclick="testApi()">🔌 Test Connection</button>
+          <button class="btn-outline" onclick="loadDemoData()">🎭 Load Demo Data</button>
+        </div>
+        <div id="api-status" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
+      </div> -->
+      <div class="settings-card">
+        <div class="settings-title">🗑️ Data Management</div>
+        <button class="btn-outline" onclick="clearAllData()" style="border-color:rgba(239,68,68,.4);color:var(--danger)">🗑️ Clear All My Data</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
