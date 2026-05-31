@@ -2,7 +2,7 @@
 /* ========================================================
    CONFIG & STATE
 ======================================================== */
-const API_BASE = 'http://localhost:8080';
+const API_BASE = 'https://spendsense-backend-6.onrender.com';
 let USE_LOCAL = false;
 let expenses  = [];
 let budget    = 0;
